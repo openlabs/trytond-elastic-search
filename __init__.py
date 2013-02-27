@@ -14,6 +14,5 @@ def register():
     Pool.register(
         IndexBacklog,
         DocumentType,
-        Trigger,
         module="elastic_search", type_="model"
     )

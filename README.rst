@@ -17,10 +17,11 @@ Configuration
 How it works
 ------------
 
-The module reuses the trigger system of Tryton to add records that have
-changed to an `Index Backlog` table. A tryton CRON task which runs every 1
-minute (by default) looks into the backlog index and makes the
-corresponding update to elastic search.
+The module adds an `Index Backlog` table to which records that need
+synchronisation with Elastic Search are added. 
+
+A tryton CRON task which runs every 1 minute (by default) looks into
+the backlog index and makes the corresponding update to elastic search.
 
 Records, that are deleted are deleted from the index.
 
@@ -33,42 +34,6 @@ defining a new method called `elastic_search_json` in the model in a
 custom module and it will be used instead of just `rec_name`. An example
 of such a method in the product model is below.
 
-.. code-block:: python
-
-    def elastic_search_json(self):
-        """
-        Return a JSON serializable dictionary of values
-        that need to be indexed by the search engine
-        """
-        return {
-            'name': self.name,
-            'category': self.category.id,
-            'category_name': self.category.name,
-        }
-
-
-Known Issues
-------------
-
-This module reuses the `ir.trigger` functionality of Tryton and the
-following issues of the trigger system affects this module too.
-
-* `Issue 3026 <https://bugs.tryton.org/issue3026>`_: Records sent as first
-  argument are incorrect. (Patch Available)
-* `Issue 3027 <https://bugs.tryton.org/issue3027>`_: There seems to be no
-  way to get the on_write triggers to work for all write that happen to a
-  record.
-
-
-Workarounds
-```````````
-
-1. To get around the above issues, the best way is to set your trigger as
-   inactive by unchecking the `active` field. (Since trigger is a required
-   field in the Document Type specification).
-2. Implement the create, write and delete methods in your custom model to
-   manually trigger storing to the index backlog. See example below.
-
 
 .. code-block:: python
 
@@ -77,6 +42,16 @@ Workarounds
     class Product:
         __name__ = "product.product"
 
+        def elastic_search_json(self):
+            """
+            Return a JSON serializable dictionary of values
+            that need to be indexed by the search engine
+            """
+            return {
+                'name': self.name,
+                'category': self.category.id,
+                'category_name': self.category.name,
+            }
 
         @classmethod
         def create(cls, values):
@@ -97,7 +72,6 @@ Workarounds
 
             # Write to the record
             super(Product, cls).write(products, values)
-
 
             # Create the record to backlog
             IndexBacklog.create_from_records(products)

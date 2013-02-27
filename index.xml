@@ -16,8 +16,6 @@ this repository contains the full copyright notices and license terms. -->
                     <field name="name"/>
                     <label name="active"/>
                     <field name="active"/>
-                    <label name="trigger"/>
-                    <field name="trigger"/>
                     <label name="model"/>
                     <field name="model"/>
                     <button 
@@ -35,7 +33,6 @@ this repository contains the full copyright notices and license terms. -->
                 <tree string="Document Types">
                     <field name="name"/>
                     <field name="model"/>
-                    <field name="trigger"/>
                 </tree>
                 ]]>
             </field>

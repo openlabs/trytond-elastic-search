@@ -12,11 +12,10 @@ from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
-from trytond.pyson import Eval
 from trytond.config import CONFIG
 
 
-__all__ = ['IndexBacklog', 'DocumentType', 'Trigger',]
+__all__ = ['IndexBacklog', 'DocumentType',]
 __metaclass__ = PoolMeta
 
 
@@ -66,7 +65,6 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         If a document does not have an `elastic_search_json` method, this
         method tries to build one in lieu.
-
         """
         return {
             'rec_name': record.rec_name,
@@ -123,15 +121,6 @@ class DocumentType(ModelSQL, ModelView):
     name = fields.Char('Name', required=True)
     active = fields.Boolean('Active', select=True)
     model = fields.Many2One('ir.model', 'Model', required=True, select=True)
-    trigger = fields.Many2One(
-        'ir.trigger', 'Trigger', required=True,
-        domain=[
-            ('model', '=', Eval('model')),
-        ],
-        context={
-            'elasticsearch': True,
-        }, depends=['model'],
-    )
 
     @classmethod
     def __setup__(cls):
@@ -154,59 +143,3 @@ class DocumentType(ModelSQL, ModelView):
 
         for document_type in document_types:
             conn.indices.refresh(Transaction().cursor.dbname)
-
-    @classmethod
-    def index_document(cls, records, trigger=None):
-        """
-        Index the given records. This method is meant to be called by the
-        ir.trigger trigger handling mechanism.
-
-        This method adds all the records to the index backlog. This method
-        does not directly update the index since:
-
-            * This transaction could still fail and there wpu
-
-        :param records: Active Records of the records to be indexed
-        :param trigger: Trigger which resulted in the call being made.
-                        This will be available when this method is called
-                        from the ir.trigger action function calls, but not
-                        when this method is reused elsewhere
-        """
-        IndexBacklog = Pool().get('elasticsearch.index_backlog')
-
-        for record in records:
-            IndexBacklog.create({
-                'record_model': record.__name__,
-                'record_id': record.id,
-            })
-
-
-
-class Trigger:
-    """
-    Trigger customisation to default the action model and function
-    when opened from document type
-    """
-    __name__ = "ir.trigger"
-
-    @staticmethod
-    def default_action_model():
-        """
-        Default the action model as elastic search document type if
-        'elasticsearch' is in the context
-        """
-        if Transaction().context.get('elasticsearch'):
-            Model = Pool().get('ir.model')
-            model, = Model.search([
-                ('model', '=', 'elasticsearch.document.type')
-            ])
-            return model.id
-
-    @staticmethod
-    def default_action_function():
-        """
-        Default the action_function to 'index_document' if
-        'elastic_search' is in the context
-        """
-        if Transaction().context.get('elasticsearch'):
-            return 'index_document'
