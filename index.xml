@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data>
+        <menuitem parent="ir.menu_administration" id="menu_elastic_search"
+                  name="Elastic Search"/>
+
+        <record model="ir.ui.view" id="document_type_form_view">
+            <field name="model">elasticsearch.document.type</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <form string="Document Type">
+                    <label name="name"/>
+                    <field name="name"/>
+                    <label name="active"/>
+                    <field name="active"/>
+                    <label name="trigger"/>
+                    <field name="trigger"/>
+                    <label name="model"/>
+                    <field name="model"/>
+                    <button 
+                        name="refresh_index" 
+                        string="Refresh Index" />
+                </form>
+                ]]>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="document_type_list_view">
+            <field name="model">elasticsearch.document.type</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <tree string="Document Types">
+                    <field name="name"/>
+                    <field name="model"/>
+                    <field name="trigger"/>
+                </tree>
+                ]]>
+            </field>
+        </record>
+        <record model="ir.action.act_window" id="act_document_type_form">
+            <field name="name">Document Types</field>
+            <field name="res_model">elasticsearch.document.type</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_document_type_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="document_type_list_view"/>
+            <field name="act_window" ref="act_document_type_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_document_type_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="document_type_form_view"/>
+            <field name="act_window" ref="act_document_type_form"/>
+        </record>
+        <menuitem parent="menu_elastic_search"
+                  action="act_document_type_form" id="menu_document_type_form"/>
+
+        <record model="ir.ui.view" id="index_backlog_form_view">
+            <field name="model">elasticsearch.index_backlog</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <form string="Index Backlog">
+                    <label name="record_model"/>
+                    <field name="record_model"/>
+                    <label name="record_id"/>
+                    <field name="record_id"/>
+                </form>
+                ]]>
+            </field>
+        </record>
+        <record model="ir.ui.view" id="index_backlog_list_view">
+            <field name="model">elasticsearch.index_backlog</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <![CDATA[
+                <tree string="Index Backlog">
+                    <field name="record_model"/>
+                    <field name="record_id"/>
+                </tree>
+                ]]>
+            </field>
+        </record>
+        <record model="ir.action.act_window" id="act_index_backlog_form">
+            <field name="name">Index Backlog</field>
+            <field name="res_model">elasticsearch.index_backlog</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_index_backlog_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="index_backlog_list_view"/>
+            <field name="act_window" ref="act_index_backlog_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_index_backlog_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="index_backlog_form_view"/>
+            <field name="act_window" ref="act_index_backlog_form"/>
+        </record>
+        <menuitem parent="menu_elastic_search"
+                      action="act_index_backlog_form" id="menu_index_backlog_form"/>
+
+        <record model="res.user" id="user_update_index">
+            <field name="login">user_elasticsearch_update_index</field>
+            <field name="name">Cron Elastic Search Index</field>
+            <field name="signature"></field>
+            <field name="active" eval="False"/>
+        </record>
+        <record model="ir.cron" id="cron_update_index">
+            <field name="name">Elastic Search Index</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="user_update_index"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="number_calls">-1</field>
+            <field name="repeat_missed" eval="False"/>
+            <field name="model">elasticsearch.index_backlog</field>
+            <field name="function">update_index</field>
+        </record>
+
+    </data>
+</tryton>

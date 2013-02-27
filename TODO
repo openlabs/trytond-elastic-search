@@ -1,0 +1,4 @@
+- Add wizard to delete index
+- Add wizard to refresh index
+- Allow mapping of fields
+- Handle translation languages
