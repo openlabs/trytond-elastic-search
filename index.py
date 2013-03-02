@@ -52,7 +52,7 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         Return a PYES connection
         """
-        return ES(CONFIG['elastic_search_server'])
+        return ES(CONFIG.options['elastic_search_server'])
 
     def _build_default_doc(self, record):
         """
@@ -66,27 +66,25 @@ class IndexBacklog(ModelSQL, ModelView):
     def update_index(self):
         conn = self._get_es_connection()
 
-        for item in self.search([]):
-            Model = Pool().get(item.record_model)
+        for item in self.browse(self.search([])):
+            model_obj = Pool().get(item.record_model)
 
-            record = Model(item.record_id)
+            record = model_obj.browse(item.record_id)
 
-            try:
-                record.create_date
-            except UserError, user_error:
+            if not record:
                 # Record may have been deleted
                 conn.delete(
                     Transaction().cursor.dbname,    # Index Name
-                    Model.__name__,                 # Document Type
+                    model_obj._name,                 # Document Type
                     item.record_id
                 )
                 # Delete the item since it has been sent to the index
-                cls.delete([item])
+                self.delete(item.id)
                 continue
 
-            if hasattr(record, 'elastic_search_json'):
+            if hasattr(model_obj, 'elastic_search_json'):
                 # A model with the elastic_search_json method
-                data = record.elastic_search_json()
+                data = model_obj.elastic_search_json(record)
             else:
                 # A model without elastic_search_json
                 data = self._build_default_doc(record)
@@ -94,12 +92,12 @@ class IndexBacklog(ModelSQL, ModelView):
             conn.index(
                 data,
                 Transaction().cursor.dbname,    # Index Name
-                record.__name__,                # Document Type
+                record._name,                	# Document Type
                 record.id,                      # ID of the record
             )
 
             # Delete the item since it has been sent to the index
-            self.delete([item])
+            self.delete(item.id)
 
 IndexBacklog()
 

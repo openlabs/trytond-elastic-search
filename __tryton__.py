@@ -8,7 +8,8 @@
     "category" : "Generic",
     "description": "Elastic Search Integration",
     "depends" : [
-        "ir"
+        "ir",
+        "res",
     ],
     "xml" : [
         "index.xml",
