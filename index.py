@@ -9,14 +9,10 @@
 """
 from pyes import ES
 from trytond.model import ModelSQL, ModelView, fields
-from trytond.pool import PoolMeta, Pool
+from trytond.pool import Pool
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from trytond.config import CONFIG
-
-
-__all__ = ['IndexBacklog', 'DocumentType',]
-__metaclass__ = PoolMeta
 
 
 class IndexBacklog(ModelSQL, ModelView):
@@ -27,41 +23,38 @@ class IndexBacklog(ModelSQL, ModelView):
     This model stores the documents that are yet to be sent to the
     remote full text search index.
     """
-    __name__ = "elasticsearch.index_backlog"
+    _name = "elasticsearch.index_backlog"
+    _description = __doc__
 
     record_model = fields.Char('Record Model', required=True)
     record_id = fields.Integer('Record ID', required=True)
 
-    @classmethod
-    def create_from_record(cls, record):
+    def create_from_record(self, record):
         """
         A convenience create method which can be passed an active record
         and it would be added to the indexing backlog.
         """
-        return cls.create({
-            'record_model': record.__name__,
+        return self.create({
+            'record_model': record._name,
             'record_id': record.id,
         })
 
-    @classmethod
-    def create_from_records(cls, records):
+    def create_from_records(self, records):
         """
         A convenience create method which can be passed multiple active
         records and they would all be added to the indexing backlog.
         """
         return [
-            cls.create_from_record(record) for record in records
+            self.create_from_record(record) for record in records
         ]
 
-    @staticmethod
-    def _get_es_connection():
+    def _get_es_connection(self):
         """
         Return a PYES connection
         """
         return ES(CONFIG['elastic_search_server'])
 
-    @staticmethod
-    def _build_default_doc(record):
+    def _build_default_doc(self, record):
         """
         If a document does not have an `elastic_search_json` method, this
         method tries to build one in lieu.
@@ -70,11 +63,10 @@ class IndexBacklog(ModelSQL, ModelView):
             'rec_name': record.rec_name,
         }
 
-    @classmethod
-    def update_index(cls):
-        conn = cls._get_es_connection()
+    def update_index(self):
+        conn = self._get_es_connection()
 
-        for item in cls.search([]):
+        for item in self.search([]):
             Model = Pool().get(item.record_model)
 
             record = Model(item.record_id)
@@ -97,7 +89,7 @@ class IndexBacklog(ModelSQL, ModelView):
                 data = record.elastic_search_json()
             else:
                 # A model without elastic_search_json
-                data = cls._build_default_doc(record)
+                data = self._build_default_doc(record)
 
             conn.index(
                 data,
@@ -107,7 +99,9 @@ class IndexBacklog(ModelSQL, ModelView):
             )
 
             # Delete the item since it has been sent to the index
-            cls.delete([item])
+            self.delete([item])
+
+IndexBacklog()
 
 
 class DocumentType(ModelSQL, ModelView):
@@ -116,30 +110,31 @@ class DocumentType(ModelSQL, ModelView):
 
     This will in future be used for the mapping too.
     """
-    __name__ = "elasticsearch.document.type"
+    _name = "elasticsearch.document.type"
+    _description = __doc__
 
     name = fields.Char('Name', required=True)
     active = fields.Boolean('Active', select=True)
     model = fields.Many2One('ir.model', 'Model', required=True, select=True)
 
-    @classmethod
-    def __setup__(cls):
-        super(DocumentType, cls).__setup__()
+    def __init__(self):
+        super(DocumentType, self).__init__()
 
         #TODO: add a unique constraint on model
-        cls._buttons.update({
+        self._buttons.update({
             'refresh_index': {}
         })
 
-    @classmethod
     @ModelView.button
-    def refresh_index(cls, document_types):
+    def refresh_index(self, document_types):
         """
         Refresh the index on Elastic Search
 
         :param document_types: Document Types
         """
-        conn = cls._get_es_connection()
+        conn = self._get_es_connection()
 
         for document_type in document_types:
             conn.indices.refresh(Transaction().cursor.dbname)
+
+DocumentType()

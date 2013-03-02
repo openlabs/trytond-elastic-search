@@ -4,19 +4,8 @@
 
 from setuptools import setup
 import re
-import os
-import ConfigParser
 
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
-config = ConfigParser.ConfigParser()
-config.readfp(open('tryton.cfg'))
-info = dict(config.items('tryton'))
-for key in ('depends', 'extras_depend', 'xml'):
-    if key in info:
-        info[key] = info[key].strip().splitlines()
+info = eval(open('__tryton__.py').read())
 major_version, minor_version, _ = info.get('version', '0.0.1').split('.', 2)
 major_version = int(major_version)
 minor_version = int(minor_version)
@@ -35,7 +24,7 @@ requires.append('trytond >= %s.%s, < %s.%s' %
 setup(name='trytond_elastic_search',
     version=info.get('version', '0.0.1'),
     description='Tryton module for Elastic Search',
-    long_description=read('README.rst'),
+    long_description=info.get('description', ''),
     author='Tryton',
     url='http://www.tryton.org/',
     download_url="http://downloads.tryton.org/" + \
@@ -46,8 +35,7 @@ setup(name='trytond_elastic_search',
         'trytond.modules.elastic_search.tests',
         ],
     package_data={
-        'trytond.modules.elastic_search': info.get('xml', []) \
-            + ['tryton.cfg', 'locale/*.po', 'views/*.xml'],
+        'trytond.modules.elastic_search': info.get('xml', [])
         },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -72,4 +60,4 @@ setup(name='trytond_elastic_search',
     """,
     test_suite='tests',
     test_loader='trytond.test_loader:Loader',
-    )
+)
