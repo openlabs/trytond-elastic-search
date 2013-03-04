@@ -7,6 +7,8 @@
     :copyright: © 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
+import json
+
 from pyes import ES
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
@@ -121,6 +123,37 @@ class DocumentType(ModelSQL, ModelView):
     name = fields.Char('Name', required=True)
     active = fields.Boolean('Active', select=True)
     model = fields.Many2One('ir.model', 'Model', required=True, select=True)
+    mapping = fields.Text('Mapping', required=True)
+    example_mapping = fields.Function(
+        fields.Text('Example Mapping'), 'get_example_mapping'
+    )
+
+    @staticmethod
+    def default_mapping():
+        return '{}'
+
+    @staticmethod
+    def default_active():
+        return True
+
+    def get_example_mapping(self, document_type, name=None):
+        """
+        Return an example mapping
+        """
+        sample = {
+            'name': {
+                'boost': 1.0,
+                'index': 'analyzed',
+                'store': 'yes',
+                'type': 'string',
+                "term_vector": "with_positions_offsets",
+            },
+            'pos': {
+                'store': 'yes',
+                'type': 'integer',
+            }
+        }
+        return json.dumps(sample, indent=4)
 
     @classmethod
     def __setup__(cls):
@@ -128,8 +161,54 @@ class DocumentType(ModelSQL, ModelView):
 
         #TODO: add a unique constraint on model
         cls._buttons.update({
-            'refresh_index': {}
+            'refresh_index': {},
+            'update_mapping': {},
+            'reindex_all_records': {},
+            'get_default_mapping': {},
         })
+
+        cls._constraints += [
+            ('check_mapping', 'wrong_mapping'),
+        ]
+        cls._error_messages.update({
+            ('wrong_mapping', 'Mapping does not seem to be valid JSON'),
+        })
+
+    def check_mapping(self):
+        """
+        Check if it is possible to at least load the JSON
+        as a check for its validity
+        """
+        try:
+            json.loads(self.mapping)
+        except:
+            return False
+        else:
+            return True
+
+    @classmethod
+    @ModelView.button
+    def reindex_all_records(cls, document_types):
+        """
+        Reindex all of the records in this model
+
+        :param document_types: Document Types
+        """
+        IndexBacklog = Pool().get('elasticsearch.index_backlog')
+
+        for document_type in document_types:
+            Model = Pool().get(document_type.model.model)
+            records = Model.search([])
+
+            # Performance speedups
+            index_backlog_create = IndexBacklog.create
+            model_name = Model.__name__
+
+            for record in map(int, records):
+                index_backlog_create({
+                    'record_model': model_name,
+                    'record_id': record,
+                })
 
     @classmethod
     @ModelView.button
@@ -139,7 +218,45 @@ class DocumentType(ModelSQL, ModelView):
 
         :param document_types: Document Types
         """
-        conn = cls._get_es_connection()
+        IndexBacklog = Pool().get('elasticsearch.index_backlog')
+
+        conn = IndexBacklog._get_es_connection()
 
         for document_type in document_types:
             conn.indices.refresh(Transaction().cursor.dbname)
+
+    @classmethod
+    @ModelView.button
+    def get_default_mapping(cls, document_types):
+        """
+        Tries to get the default mapping from the model object
+        """
+        for document_type in document_types:
+            Model = Pool().get(document_type.model.model)
+            if hasattr(Model, 'es_mapping'):
+                cls.write(
+                    [document_type], {
+                        'mapping': json.dumps(Model.es_mapping(), indent=4)
+                    }
+                )
+            else:
+                cls.raise_user_error(
+                    "Model %s has no mapping specified" % Model.__name__
+                )
+
+    @classmethod
+    @ModelView.button
+    def update_mapping(cls, document_types):
+        """
+        Update the mapping on the server side
+        """
+        IndexBacklog = Pool().get('elasticsearch.index_backlog')
+
+        conn = IndexBacklog._get_es_connection()
+
+        for document_type in document_types:
+            conn.indices.put_mapping(
+                document_type.model.model,  # Type
+                {'properties': json.loads(document_type.mapping)},
+                [Transaction().cursor.dbname],  # Index
+            )
