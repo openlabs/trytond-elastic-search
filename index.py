@@ -26,8 +26,8 @@ class IndexBacklog(ModelSQL, ModelView):
     _name = "elasticsearch.index_backlog"
     _description = __doc__
 
-    record_model = fields.Char('Record Model', required=True)
-    record_id = fields.Integer('Record ID', required=True)
+    record_model = fields.Char('Record Model', required=True, select=True)
+    record_id = fields.Integer('Record ID', required=True, select=True)
 
     def create_from_record(self, record):
         """
