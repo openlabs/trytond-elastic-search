@@ -85,3 +85,20 @@ of such a method in the product model is below.
 
             # Delete the record
             super(Product, cls).delete(products)
+
+
+Can I use this in production ?
+``````````````````````````````
+
+Yes and No.
+
+Yes because:
+
+  * We use this in production, on a couple of implementations but we are
+    still learning from the results.
+
+No because:
+
+  * There are no tests yet!
+  * We (`Openlabs <http://openlabs.co.in>`_) might chnage the API in
+    future.
