@@ -31,19 +31,26 @@ class IndexBacklog(ModelSQL, ModelView):
     """
     __name__ = "elasticsearch.index_backlog"
 
-    record_model = fields.Char('Record Model', required=True)
-    record_id = fields.Integer('Record ID', required=True)
+    record_model = fields.Char('Record Model', required=True, select=True)
+    record_id = fields.Integer('Record ID', required=True, select=True)
 
     @classmethod
     def create_from_record(cls, record):
         """
         A convenience create method which can be passed an active record
-        and it would be added to the indexing backlog.
+        and it would be added to the indexing backlog. A check is done to
+        ensure that the record is not already in the backlog.
+
+        :param record: An active record instance of the record to be indexed
         """
-        return cls.create({
-            'record_model': record.__name__,
-            'record_id': record.id,
-        })
+        if not cls.search([
+                    ('record_model', '=', record.__name__),
+                    ('record_id', '=', record.id),
+                ], limit=1):
+            return cls.create({
+                'record_model': record.__name__,
+                'record_id': record.id,
+            })
 
     @classmethod
     def create_from_records(cls, records):
@@ -74,6 +81,10 @@ class IndexBacklog(ModelSQL, ModelView):
 
     @classmethod
     def update_index(cls):
+        """
+        Update the remote elastic search index from the backlog and
+        delete backlog entries once done
+        """
         conn = cls._get_es_connection()
 
         for item in cls.search([]):
