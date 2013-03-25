@@ -37,6 +37,7 @@ setup(name='trytond_elastic_search',
     description='Tryton module for Elastic Search',
     long_description=read('README.rst'),
     author='Tryton',
+    author_email='info@openlabs.co.in',
     url='https://github.com/openlabs/trytond-elastic-search',
     package_dir={'trytond.modules.elastic_search': '.'},
     packages=[
