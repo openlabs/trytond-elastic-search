@@ -26,13 +26,18 @@ requires = [
 ]
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
-        requires.append('trytond_%s >= %s.%s, < %s.%s' %
-                (dep, major_version, minor_version, major_version,
-                    minor_version + 1))
-requires.append('trytond >= %s.%s, < %s.%s' %
-        (major_version, minor_version, major_version, minor_version + 1))
+        requires.append(
+            'trytond_%s >= %s.%s, < %s.%s' %
+            (dep, major_version, minor_version, major_version,
+                minor_version + 1)
+        )
+requires.append(
+    'trytond >= %s.%s, < %s.%s' %
+        (major_version, minor_version, major_version, minor_version + 1)
+)
 
-setup(name='trytond_elastic_search',
+setup(
+    name='trytond_elastic_search',
     version=info.get('version', '0.0.1'),
     description='Tryton module for Elastic Search',
     long_description=read('README.rst'),
@@ -43,11 +48,11 @@ setup(name='trytond_elastic_search',
     packages=[
         'trytond.modules.elastic_search',
         'trytond.modules.elastic_search.tests',
-        ],
+    ],
     package_data={
-        'trytond.modules.elastic_search': info.get('xml', []) \
+        'trytond.modules.elastic_search': info.get('xml', [])
             + ['tryton.cfg', 'locale/*.po', 'views/*.xml'],
-        },
+    },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Plugins',
@@ -61,7 +66,7 @@ setup(name='trytond_elastic_search',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business',
-        ],
+    ],
     license='GPL-3',
     install_requires=requires,
     zip_safe=False,
@@ -71,4 +76,4 @@ setup(name='trytond_elastic_search',
     """,
     test_suite='tests',
     test_loader='trytond.test_loader:Loader',
-    )
+)
