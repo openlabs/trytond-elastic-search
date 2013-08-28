@@ -17,7 +17,7 @@ from trytond.exceptions import UserError
 from trytond.config import CONFIG
 
 
-__all__ = ['IndexBacklog', 'DocumentType',]
+__all__ = ['IndexBacklog', 'DocumentType', ]
 __metaclass__ = PoolMeta
 
 
@@ -35,32 +35,25 @@ class IndexBacklog(ModelSQL, ModelView):
     record_id = fields.Integer('Record ID', required=True, select=True)
 
     @classmethod
-    def create_from_record(cls, record):
-        """
-        A convenience create method which can be passed an active record
-        and it would be added to the indexing backlog. A check is done to
-        ensure that the record is not already in the backlog.
-
-        :param record: An active record instance of the record to be indexed
-        """
-        if not cls.search([
-                    ('record_model', '=', record.__name__),
-                    ('record_id', '=', record.id),
-                ], limit=1):
-            return cls.create({
-                'record_model': record.__name__,
-                'record_id': record.id,
-            })
-
-    @classmethod
     def create_from_records(cls, records):
         """
         A convenience create method which can be passed multiple active
-        records and they would all be added to the indexing backlog.
+        records and they would all be added to the indexing backlog. A check
+        is done to ensure that a record is not already in the backlog.
+
+        :param record: List of active records to be indexed
         """
-        return [
-            cls.create_from_record(record) for record in records
-        ]
+        vlist = []
+        for record in records:
+            if not cls.search([
+                    ('record_model', '=', record.__name__),
+                    ('record_id', '=', record.id),
+            ], limit=1):
+                vlist.append({
+                    'record_model': record.__name__,
+                    'record_id': record.id,
+                })
+        return cls.create(vlist)
 
     @staticmethod
     def _get_es_connection():
@@ -94,7 +87,7 @@ class IndexBacklog(ModelSQL, ModelView):
 
             try:
                 record.create_date
-            except UserError, user_error:
+            except UserError:
                 # Record may have been deleted
                 conn.delete(
                     Transaction().cursor.dbname,    # Index Name
@@ -177,13 +170,16 @@ class DocumentType(ModelSQL, ModelView):
             'reindex_all_records': {},
             'get_default_mapping': {},
         })
-
-        cls._constraints += [
-            ('check_mapping', 'wrong_mapping'),
-        ]
         cls._error_messages.update({
             'wrong_mapping': 'Mapping does not seem to be valid JSON',
         })
+
+    @classmethod
+    def validate(cls, document_types):
+        "Validate the records"
+        super(DocumentType, cls).validate(document_types)
+        for document_type in document_types:
+            document_type.check_mapping()
 
     def check_mapping(self):
         """
@@ -193,9 +189,7 @@ class DocumentType(ModelSQL, ModelView):
         try:
             json.loads(self.mapping)
         except:
-            return False
-        else:
-            return True
+            self.raise_user_error('wrong_mapping')
 
     @classmethod
     @ModelView.button
@@ -215,11 +209,13 @@ class DocumentType(ModelSQL, ModelView):
             index_backlog_create = IndexBacklog.create
             model_name = Model.__name__
 
-            for record in map(int, records):
-                index_backlog_create({
+            vlist = []
+            for record in records:
+                vlist.append({
                     'record_model': model_name,
-                    'record_id': record,
+                    'record_id': record.id,
                 })
+            index_backlog_create(vlist)
 
     @classmethod
     @ModelView.button
