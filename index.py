@@ -182,7 +182,7 @@ class DocumentType(ModelSQL, ModelView):
             ('check_mapping', 'wrong_mapping'),
         ]
         cls._error_messages.update({
-            ('wrong_mapping', 'Mapping does not seem to be valid JSON'),
+            'wrong_mapping': 'Mapping does not seem to be valid JSON',
         })
 
     def check_mapping(self):
