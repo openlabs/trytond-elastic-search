@@ -2,7 +2,6 @@
 """
     __init__
 
-
     :copyright: © 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
@@ -11,6 +10,7 @@ from .index import IndexBacklog, DocumentType
 
 
 def register():
+    "Register models to pool"
     Pool.register(
         IndexBacklog,
         DocumentType,
