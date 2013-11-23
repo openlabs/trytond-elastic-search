@@ -125,8 +125,10 @@ class DocumentType(ModelSQL, ModelView):
     __name__ = "elasticsearch.document.type"
 
     name = fields.Char('Name', required=True)
-    active = fields.Boolean('Active', select=True)
     model = fields.Many2One('ir.model', 'Model', required=True, select=True)
+    trigger = fields.Many2One(
+        'ir.trigger', 'Trigger', required=False, ondelete='RESTRICT'
+    )
     mapping = fields.Text('Mapping', required=True)
     example_mapping = fields.Function(
         fields.Text('Example Mapping'), 'get_example_mapping'
@@ -135,10 +137,6 @@ class DocumentType(ModelSQL, ModelView):
     @staticmethod
     def default_mapping():
         return '{}'
-
-    @staticmethod
-    def default_active():
-        return True
 
     def get_example_mapping(self, document_type, name=None):
         """
@@ -173,6 +171,81 @@ class DocumentType(ModelSQL, ModelView):
         cls._error_messages.update({
             'wrong_mapping': 'Mapping does not seem to be valid JSON',
         })
+
+    @classmethod
+    def create(cls, document_types):
+        "Create records and make appropriate triggers"
+        # So that we don't modify the original data passed
+        document_types = [dt.copy() for dt in document_types]
+        for document_type in document_types:
+            document_type['trigger'] = cls._trigger_create(
+                document_type['name'],
+                document_type['model']
+            ).id
+        return super(DocumentType, cls).create(document_types)
+
+    @classmethod
+    def write(cls, document_types, values):
+        "Update records and add/remove triggers appropriately"
+        Trigger = Pool().get('ir.trigger')
+
+        if 'trigger' in values:
+            raise UserError("Updating Trigger manually is not allowed!")
+
+        triggers_to_delete = []
+        for document_type in document_types:
+            triggers_to_delete.append(document_type.trigger)
+
+            values_new = values.copy()
+            # so that we don't change the original values passed to us
+            trigger = cls._trigger_create(
+                values_new.get('name', document_type.name),
+                values_new.get('model', document_type.model.id)
+            )
+            values_new['trigger'] = trigger.id
+            super(DocumentType, cls).write([document_type], values_new)
+
+        Trigger.delete(triggers_to_delete)
+
+    @classmethod
+    def delete(cls, document_types):
+        "Delete records and remove associated triggers"
+        Trigger = Pool().get('ir.trigger')
+
+        triggers_to_delete = [dt.trigger for dt in document_types]
+        super(DocumentType, cls).delete(document_types)
+        Trigger.delete(triggers_to_delete)
+
+    @classmethod
+    def _trigger_create(cls, name, model):
+        """Create trigger for model
+
+        :param name: Name of the DocumentType used as Trigger name
+        :param model: Model id
+        """
+        Trigger = Pool().get('ir.trigger')
+        Model = Pool().get('ir.model')
+
+        index_model = Model(model)
+        action_model, = Model.search([
+            ('model', '=', cls.__name__),
+        ])
+
+        return Trigger.create([{
+            'name': "elasticsearch_%s" % name,
+            'model': index_model.id,
+            'on_create': True,
+            'on_write': True,
+            'on_delete': True,
+            'action_model': action_model.id,
+            'condition': 'True',
+            'action_function': '_trigger_handler',
+        }])[0]
+
+    @classmethod
+    def _trigger_handler(cls, records, trigger):
+        "Handler called by trigger"
+        return IndexBacklog.create_from_records(records)
 
     @classmethod
     def validate(cls, document_types):
