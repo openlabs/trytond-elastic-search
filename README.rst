@@ -53,39 +53,6 @@ of such a method in the product model is below.
                 'category_name': self.category.name,
             }
 
-        @classmethod
-        def create(cls, values):
-            IndexBacklog = Pool().get('elasticsearch.index_backlog')
-
-            # First save the record
-            created = super(Product, cls).create(values)
-
-            # Add the record to backlog
-            IndexBacklog.create_from_record(created)
-
-            # Return the value
-            return created
-
-        @classmethod
-        def write(cls, products, values)
-            IndexBacklog = Pool().get('elasticsearch.index_backlog')
-
-            # Write to the record
-            super(Product, cls).write(products, values)
-
-            # Create the record to backlog
-            IndexBacklog.create_from_records(products)
-
-        @classmethod
-        def delete(cls, products):
-            IndexBacklog = Pool().get('elasticsearch.index_backlog')
-
-            # Add the deleted records also to backlog
-            IndexBacklog.create_from_records(products)
-
-            # Delete the record
-            super(Product, cls).delete(products)
-
 
 Can I use this in production ?
 ``````````````````````````````
