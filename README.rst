@@ -4,6 +4,9 @@ Elastic Search Full Text Search Integration
 This module allows tryton records of selected models to be exported to
 `Elastic Search <http://www.elasticsearch.org/>`_ full text search engine.
 
+.. image:: https://travis-ci.org/openlabs/trytond-elastic-search.png?branch=2.8
+   :target: https://travis-ci.org/openlabs/trytond-elastic-search
+
 
 Configuration
 -------------
