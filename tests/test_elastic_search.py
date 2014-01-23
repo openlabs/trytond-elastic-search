@@ -81,18 +81,6 @@ class DocumentTypeTestCase(unittest.TestCase):
         self.Model = POOL.get('ir.model')
         self.Trigger = POOL.get('ir.trigger')
 
-    def test0005views(self):
-        '''
-        Test views.
-        '''
-        test_view('elastic_search')
-
-    def test0006depends(self):
-        '''
-        Test depends.
-        '''
-        test_depends()
-
     def create_defaults(self):
         user_model, = self.Model.search([('model', '=', 'res.user')])
         dt1, = self.DocumentType.create([{
