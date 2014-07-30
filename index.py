@@ -161,7 +161,7 @@ class DocumentType(ModelSQL, ModelView):
     def __setup__(cls):
         super(DocumentType, cls).__setup__()
 
-        #TODO: add a unique constraint on model
+        # TODO: add a unique constraint on model
         cls._buttons.update({
             'refresh_index': {},
             'update_mapping': {},
