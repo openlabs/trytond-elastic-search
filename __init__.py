@@ -2,11 +2,11 @@
 """
     __init__
 
-    :copyright: © 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: © 2013-2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool
-from .index import IndexBacklog, DocumentType
+from index import IndexBacklog, DocumentType
 
 
 def register():
