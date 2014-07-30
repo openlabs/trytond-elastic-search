@@ -1,15 +1,47 @@
 #!/usr/bin/env python
-#This file is part of Tryton.  The COPYRIGHT file at the top level of
-#this repository contains the full copyright notices and license terms.
-
-from setuptools import setup
+# This file is part of Tryton.  The COPYRIGHT file at the top level of
+# this repository contains the full copyright notices and license terms.
+import sys
 import re
 import os
 import ConfigParser
+import unittest
+from setuptools import setup, Command
 
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+
+class SQLiteTest(Command):
+    """
+    Run the tests on SQLite
+    """
+    description = "Run tests on SQLite"
+
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        if self.distribution.tests_require:
+            self.distribution.fetch_build_eggs(self.distribution.tests_require)
+
+        from trytond.config import CONFIG
+        CONFIG['db_type'] = 'sqlite'
+        os.environ['DB_NAME'] = ':memory:'
+
+        from tests import suite
+        test_result = unittest.TextTestRunner(verbosity=3).run(suite())
+
+        if test_result.wasSuccessful():
+            sys.exit(0)
+        sys.exit(-1)
+
 
 config = ConfigParser.ConfigParser()
 config.readfp(open('tryton.cfg'))
@@ -32,8 +64,9 @@ for dep in info.get('depends', []):
                 minor_version + 1)
         )
 requires.append(
-    'trytond >= %s.%s, < %s.%s' %
-        (major_version, minor_version, major_version, minor_version + 1)
+    'trytond >= %s.%s, < %s.%s' % (
+        major_version, minor_version, major_version, minor_version + 1
+    )
 )
 
 setup(
@@ -50,8 +83,9 @@ setup(
         'trytond.modules.elastic_search.tests',
     ],
     package_data={
-        'trytond.modules.elastic_search': info.get('xml', [])
-            + ['tryton.cfg', 'locale/*.po', 'views/*.xml'],
+        'trytond.modules.elastic_search': info.get('xml', []) + [
+            'tryton.cfg', 'locale/*.po', 'views/*.xml'
+        ],
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -76,4 +110,7 @@ setup(
     """,
     test_suite='tests',
     test_loader='trytond.test_loader:Loader',
+    cmdclass={
+        'test': SQLiteTest,
+    },
 )
