@@ -60,7 +60,9 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         Return a PYES connection
         """
-        return ES(CONFIG['elastic_search_server'])
+        return ES(
+            CONFIG.get('elastic_search_server', 'localhost:9200').split(',')
+        )
 
     @staticmethod
     def _build_default_doc(record):
