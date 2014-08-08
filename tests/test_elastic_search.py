@@ -67,6 +67,24 @@ class IndexBacklogTestCase(unittest.TestCase):
             self.IndexBacklog.update_index()
             self.assertEqual(len(self.IndexBacklog.search([])), 0)
 
+    def test_0900_batch_indexing(self):
+        with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            users = self.User.create([
+                {
+                    'name': 'user%s' % index,
+                    'login': 'user%s' % index,
+                } for index in xrange(1, 201)
+            ])
+            # Adds list of active records to IndexBacklog
+            self.IndexBacklog.create_from_records(users)
+            self.assertEqual(len(self.IndexBacklog.search([])), 200)
+            # Updates the remote elastic search index from backlog and deletes
+            # the backlog entries. Default batch size of 100.
+            self.IndexBacklog.update_index()
+            self.assertEqual(len(self.IndexBacklog.search([])), 100)
+            self.IndexBacklog.update_index()
+            self.assertEqual(len(self.IndexBacklog.search([])), 0)
+
 
 class DocumentTypeTestCase(unittest.TestCase):
     """

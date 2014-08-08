@@ -60,7 +60,9 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         Return a PYES connection
         """
-        return ES(CONFIG['elastic_search_server'])
+        return ES(
+            CONFIG.get('elastic_search_server', 'localhost:9200').split(',')
+        )
 
     @staticmethod
     def _build_default_doc(record):
@@ -73,14 +75,21 @@ class IndexBacklog(ModelSQL, ModelView):
         }
 
     @classmethod
-    def update_index(cls):
+    def update_index(cls, batch_size=100):
         """
         Update the remote elastic search index from the backlog and
-        delete backlog entries once done
+        delete backlog entries once done.
+
+        To be scalable, this operation limits itself to handling the oldest
+        batch of records at a time. The batch_size can be optionally passed on
+        to this function call. This should be small enough for subsequent
+        transactions not to be blocked for a long time.
+
+        That depends on your specific implementation and index size.
         """
         conn = cls._get_es_connection()
 
-        for item in cls.search([]):
+        for item in cls.search([], order=[('id', 'DESC')], limit=batch_size):
             Model = Pool().get(item.record_model)
 
             record = Model(item.record_id)
