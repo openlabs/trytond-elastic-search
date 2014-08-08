@@ -89,40 +89,38 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         conn = cls._get_es_connection()
 
-        for item in cls.search([], order=[('id', 'DESC')], limit=batch_size):
-            Model = Pool().get(item.record_model)
+        for item in cls.search_read(
+                [], order=[('id', 'DESC')], limit=batch_size,
+                fields_names=['record_model', 'record_id', 'id']):
 
-            record = Model(item.record_id)
+            Model = Pool().get(item['record_model'])
 
             try:
-                record.create_date
-            except UserError:
+                record, = Model.search([('id', '=', item['record_id'])])
+            except ValueError:
                 # Record may have been deleted
                 conn.delete(
                     Transaction().cursor.dbname,    # Index Name
                     Model.__name__,                 # Document Type
-                    item.record_id
+                    item['record_id']
                 )
-                # Delete the item since it has been sent to the index
-                cls.delete([item])
-                continue
-
-            if hasattr(record, 'elastic_search_json'):
-                # A model with the elastic_search_json method
-                data = record.elastic_search_json()
             else:
-                # A model without elastic_search_json
-                data = cls._build_default_doc(record)
+                if hasattr(record, 'elastic_search_json'):
+                    # A model with the elastic_search_json method
+                    data = record.elastic_search_json()
+                else:
+                    # A model without elastic_search_json
+                    data = cls._build_default_doc(record)
 
-            conn.index(
-                data,
-                Transaction().cursor.dbname,    # Index Name
-                record.__name__,                # Document Type
-                record.id,                      # ID of the record
-            )
-
-            # Delete the item since it has been sent to the index
-            cls.delete([item])
+                conn.index(
+                    data,
+                    Transaction().cursor.dbname,    # Index Name
+                    record.__name__,                # Document Type
+                    record.id,                      # ID of the record
+                )
+            finally:
+                # Delete the item since it has been sent to the index
+                cls.delete([cls(item['id'])])
 
 
 class DocumentType(ModelSQL, ModelView):
