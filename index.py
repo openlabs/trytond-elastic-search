@@ -10,6 +10,7 @@
 import json
 
 from pyes import ES
+from pyes.exceptions import NotFoundException
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
@@ -99,11 +100,16 @@ class IndexBacklog(ModelSQL, ModelView):
                 record, = Model.search([('id', '=', item['record_id'])])
             except ValueError:
                 # Record may have been deleted
-                conn.delete(
-                    Transaction().cursor.dbname,    # Index Name
-                    Model.__name__,                 # Document Type
-                    item['record_id']
-                )
+                try:
+                    conn.delete(
+                        Transaction().cursor.dbname,    # Index Name
+                        Model.__name__,                 # Document Type
+                        item['record_id']
+                    )
+                except NotFoundException:
+                    # This record was not there in elastic search too.
+                    # Never mind!
+                    pass
             else:
                 if hasattr(record, 'elastic_search_json'):
                     # A model with the elastic_search_json method
