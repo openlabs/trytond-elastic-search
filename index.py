@@ -62,7 +62,8 @@ class IndexBacklog(ModelSQL, ModelView):
         Return a PYES connection
         """
         return ES(
-            CONFIG.get('elastic_search_server', 'localhost:9200').split(',')
+            CONFIG.get('elastic_search_server', 'localhost:9200').split(','),
+            default_indices=[Transaction().cursor.dbname]
         )
 
     @staticmethod
