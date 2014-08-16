@@ -4,18 +4,16 @@
 
     Elastic search by default has indexes and types.
 
-    :copyright: © 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: © 2013-2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import json
+import warnings
 
-from pyes import ES
 from pyes.exceptions import NotFoundException
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
-from trytond.transaction import Transaction
 from trytond.exceptions import UserError
-from trytond.config import CONFIG
 
 
 __all__ = ['IndexBacklog', 'DocumentType', ]
@@ -61,10 +59,14 @@ class IndexBacklog(ModelSQL, ModelView):
         """
         Return a PYES connection
         """
-        return ES(
-            CONFIG.get('elastic_search_server', 'localhost:9200').split(','),
-            default_indices=[Transaction().cursor.dbname]
+        warnings.warn(
+            "_get_es_connection will be deprecated in version 3.4\n"
+            "Pool().get('elasticsearch.configuration').get_es_connection() "
+            "replaces this method.",
+            DeprecationWarning
         )
+        Configuration = Pool().get('elasticsearch.configuration')
+        return Configuration.get_es_connection()
 
     @staticmethod
     def _build_default_doc(record):
@@ -89,7 +91,9 @@ class IndexBacklog(ModelSQL, ModelView):
 
         That depends on your specific implementation and index size.
         """
-        conn = cls._get_es_connection()
+        config = Pool().get('elasticsearch.configuration')(1)
+
+        conn = config.get_es_connection()
 
         for item in cls.search_read(
                 [], order=[('id', 'DESC')], limit=batch_size,
@@ -103,8 +107,8 @@ class IndexBacklog(ModelSQL, ModelView):
                 # Record may have been deleted
                 try:
                     conn.delete(
-                        Transaction().cursor.dbname,    # Index Name
-                        Model.__name__,                 # Document Type
+                        config.index_name,                      # Index Name
+                        config.make_type_name(Model.__name__),  # Document Type
                         item['record_id']
                     )
                 except NotFoundException:
@@ -121,9 +125,9 @@ class IndexBacklog(ModelSQL, ModelView):
 
                 conn.index(
                     data,
-                    Transaction().cursor.dbname,    # Index Name
-                    record.__name__,                # Document Type
-                    record.id,                      # ID of the record
+                    config.index_name,                          # Index Name
+                    config.make_type_name(record.__name__),     # Document Type
+                    record.id,                                  # Record ID
                 )
             finally:
                 # Delete the item since it has been sent to the index
@@ -144,32 +148,10 @@ class DocumentType(ModelSQL, ModelView):
         'ir.trigger', 'Trigger', required=False, ondelete='RESTRICT'
     )
     mapping = fields.Text('Mapping', required=True)
-    example_mapping = fields.Function(
-        fields.Text('Example Mapping'), 'get_example_mapping'
-    )
 
     @staticmethod
     def default_mapping():
         return '{}'
-
-    def get_example_mapping(self, document_type, name=None):
-        """
-        Return an example mapping
-        """
-        sample = {
-            'name': {
-                'boost': 1.0,
-                'index': 'analyzed',
-                'store': 'yes',
-                'type': 'string',
-                "term_vector": "with_positions_offsets",
-            },
-            'pos': {
-                'store': 'yes',
-                'type': 'integer',
-            }
-        }
-        return json.dumps(sample, indent=4)
 
     @classmethod
     def __setup__(cls):
@@ -177,7 +159,6 @@ class DocumentType(ModelSQL, ModelView):
 
         # TODO: add a unique constraint on model
         cls._buttons.update({
-            'refresh_index': {},
             'update_mapping': {},
             'reindex_all_records': {},
             'get_default_mapping': {},
@@ -306,21 +287,6 @@ class DocumentType(ModelSQL, ModelView):
 
     @classmethod
     @ModelView.button
-    def refresh_index(cls, document_types):
-        """
-        Refresh the index on Elastic Search
-
-        :param document_types: Document Types
-        """
-        IndexBacklog = Pool().get('elasticsearch.index_backlog')
-
-        conn = IndexBacklog._get_es_connection()
-
-        for document_type in document_types:
-            conn.indices.refresh(Transaction().cursor.dbname)
-
-    @classmethod
-    @ModelView.button
     def get_default_mapping(cls, document_types):
         """
         Tries to get the default mapping from the model object
@@ -344,13 +310,15 @@ class DocumentType(ModelSQL, ModelView):
         """
         Update the mapping on the server side
         """
-        IndexBacklog = Pool().get('elasticsearch.index_backlog')
+        config = Pool().get('elasticsearch.configuration')(1)
 
-        conn = IndexBacklog._get_es_connection()
+        conn = config.get_es_connection()
 
         for document_type in document_types:
             conn.indices.put_mapping(
-                document_type.model.model,  # Type
-                {'properties': json.loads(document_type.mapping)},
-                [Transaction().cursor.dbname],  # Index
+                config.make_type(document_type.model.model),        # Type
+                {
+                    'properties': json.loads(document_type.mapping),
+                },
+                [config.index_name],                                # Index
             )

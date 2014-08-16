@@ -84,7 +84,7 @@ setup(
     ],
     package_data={
         'trytond.modules.elastic_search': info.get('xml', []) + [
-            'tryton.cfg', 'locale/*.po', 'views/*.xml'
+            'tryton.cfg', 'locale/*.po', 'view/*.xml'
         ],
     },
     classifiers=[

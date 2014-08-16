@@ -1,0 +1,20 @@
+<form string="Document Type">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="model"/>
+    <field name="model"/>
+    <notebook colspan="4">
+        <page id="mapping" string="Mapping">
+            <field name="mapping" colspan="4"/>
+            <button 
+                name="update_mapping"
+                string="Update Mapping on ES" colspan="2"/>
+            <button 
+                name="get_default_mapping"
+                string="Get default mapping from Model" colspan="2"/>
+        </page>
+    </notebook>
+    <button 
+        name="reindex_all_records"
+        string="Reindex All Records" colspan="2"/>
+</form>

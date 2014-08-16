@@ -1,0 +1,10 @@
+<tree string="Document Types">
+    <field name="name"/>
+    <field name="model"/>
+    <button 
+        name="update_mapping"
+        string="Update Mapping" />
+    <button 
+        name="reindex_all_records"
+        string="Reindex All Records" />
+</tree>

@@ -3,61 +3,42 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
+        <record model="res.group" id="group_elasticsearch_admin">
+            <field name="name">Elastic Search Administrator</field>
+        </record>
+        <record model="res.user-res.group" id="user_admin_group_elasticsearch_admin">
+            <field name="user" ref="res.user_admin"/>
+            <field name="group" ref="group_elasticsearch_admin"/>
+        </record>
+        <record model="res.user-res.group" id="user_trigger_group_elasticsearch_admin">
+            <field name="user" ref="res.user_trigger"/>
+            <field name="group" ref="group_elasticsearch_admin"/>
+        </record>
+
+        <!-- The user which runs the crons for backlog index -->
+        <record model="res.user" id="user_update_index">
+            <field name="login">user_elasticsearch_update_index</field>
+            <field name="name">Cron Elastic Search Index</field>
+            <field name="signature"></field>
+            <field name="active" eval="False"/>
+        </record>
+        <record model="res.user-res.group" id="user_cron_group_elasticsearch_admin">
+            <field name="user" ref="user_update_index"/>
+            <field name="group" ref="group_elasticsearch_admin"/>
+        </record>
+
         <menuitem parent="ir.menu_administration" id="menu_elastic_search"
                   name="Elastic Search"/>
 
         <record model="ir.ui.view" id="document_type_form_view">
             <field name="model">elasticsearch.document.type</field>
             <field name="type">form</field>
-            <field name="arch" type="xml">
-                <![CDATA[
-                <form string="Document Type">
-                    <label name="name"/>
-                    <field name="name"/>
-                    <label name="model"/>
-                    <field name="model"/>
-                    <notebook colspan="4">
-                        <page id="mapping" string="Mapping">
-                            <field name="mapping" colspan="2"/>
-                            <field name="example_mapping" colspan="2"/>
-                            <button 
-                                name="update_mapping"
-                                string="Update Mapping on ES" colspan="2"/>
-                            <button 
-                                name="get_default_mapping"
-                                string="Get default mapping from Model" colspan="2"/>
-                        </page>
-                    </notebook>
-                    <button 
-                        name="refresh_index"
-                        string="Refresh Index" colspan="2"/>
-                    <button 
-                        name="reindex_all_records"
-                        string="Reindex All Records" colspan="2"/>
-                </form>
-                ]]>
-            </field>
+            <field name="name">document_type_form</field>
         </record>
         <record model="ir.ui.view" id="document_type_list_view">
             <field name="model">elasticsearch.document.type</field>
             <field name="type">tree</field>
-            <field name="arch" type="xml">
-                <![CDATA[
-                <tree string="Document Types">
-                    <field name="name"/>
-                    <field name="model"/>
-                    <button 
-                        name="refresh_index"
-                        string="Refresh Index" />
-                    <button 
-                        name="update_mapping"
-                        string="Update Mapping" />
-                    <button 
-                        name="reindex_all_records"
-                        string="Reindex All Records" />
-                </tree>
-                ]]>
-            </field>
+            <field name="name">document_type_list</field>
         </record>
         <record model="ir.action.act_window" id="act_document_type_form">
             <field name="name">Document Types</field>
@@ -79,28 +60,12 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.ui.view" id="index_backlog_form_view">
             <field name="model">elasticsearch.index_backlog</field>
             <field name="type">form</field>
-            <field name="arch" type="xml">
-                <![CDATA[
-                <form string="Index Backlog">
-                    <label name="record_model"/>
-                    <field name="record_model"/>
-                    <label name="record_id"/>
-                    <field name="record_id"/>
-                </form>
-                ]]>
-            </field>
+            <field name="name">index_backlog_form</field>
         </record>
         <record model="ir.ui.view" id="index_backlog_list_view">
             <field name="model">elasticsearch.index_backlog</field>
             <field name="type">tree</field>
-            <field name="arch" type="xml">
-                <![CDATA[
-                <tree string="Index Backlog">
-                    <field name="record_model"/>
-                    <field name="record_id"/>
-                </tree>
-                ]]>
-            </field>
+            <field name="name">index_backlog_list</field>
         </record>
         <record model="ir.action.act_window" id="act_index_backlog_form">
             <field name="name">Index Backlog</field>
@@ -119,12 +84,6 @@ this repository contains the full copyright notices and license terms. -->
         <menuitem parent="menu_elastic_search"
                       action="act_index_backlog_form" id="menu_index_backlog_form"/>
 
-        <record model="res.user" id="user_update_index">
-            <field name="login">user_elasticsearch_update_index</field>
-            <field name="name">Cron Elastic Search Index</field>
-            <field name="signature"></field>
-            <field name="active" eval="False"/>
-        </record>
         <record model="ir.cron" id="cron_update_index">
             <field name="name">Elastic Search Index</field>
             <field name="request_user" ref="res.user_admin"/>
@@ -136,6 +95,23 @@ this repository contains the full copyright notices and license terms. -->
             <field name="repeat_missed" eval="False"/>
             <field name="model">elasticsearch.index_backlog</field>
             <field name="function">update_index</field>
+        </record>
+
+        <record model="ir.model.access" id="access_backlog_group_es_admin">
+            <field name="model" search="[('model', '=', 'elasticsearch.index_backlog')]"/>
+            <field name="group" ref="group_elasticsearch_admin"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
+        </record>
+        <record model="ir.model.access" id="access_document_type_group_es_admin">
+            <field name="model" search="[('model', '=', 'elasticsearch.document.type')]"/>
+            <field name="group" ref="group_elasticsearch_admin"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
         </record>
 
     </data>
