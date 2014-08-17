@@ -316,7 +316,7 @@ class DocumentType(ModelSQL, ModelView):
 
         for document_type in document_types:
             conn.indices.put_mapping(
-                config.make_type(document_type.model.model),        # Type
+                config.make_type_name(document_type.model.model),   # Type
                 {
                     'properties': json.loads(document_type.mapping),
                 },
