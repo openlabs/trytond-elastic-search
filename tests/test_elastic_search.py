@@ -35,6 +35,7 @@ class IndexBacklogTestCase(unittest.TestCase):
     def setUp(self):
         trytond.tests.test_tryton.install_module('elastic_search')
         self.IndexBacklog = POOL.get('elasticsearch.index_backlog')
+        self.Configuration = POOL.get('elasticsearch.configuration')
         self.User = POOL.get('res.user')
 
     def test0005views(self):
@@ -54,6 +55,7 @@ class IndexBacklogTestCase(unittest.TestCase):
         Creates index backlog and updates remote elastic search index
         """
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.Configuration(1).save()
             users = self.User.create([{
                 'name': 'user1', 'login': 'user1'
             }, {
@@ -69,6 +71,7 @@ class IndexBacklogTestCase(unittest.TestCase):
 
     def test_0900_batch_indexing(self):
         with Transaction().start(DB_NAME, USER, context=CONTEXT):
+            self.Configuration(1).save()
             users = self.User.create([
                 {
                     'name': 'user%s' % index,
@@ -98,9 +101,14 @@ class DocumentTypeTestCase(unittest.TestCase):
         self.User = POOL.get('res.user')
         self.Model = POOL.get('ir.model')
         self.Trigger = POOL.get('ir.trigger')
+        self.Configuration = POOL.get('elasticsearch.configuration')
 
     def create_defaults(self):
         user_model, = self.Model.search([('model', '=', 'res.user')])
+
+        config = self.Configuration(1)
+        config.save()
+
         dt1, = self.DocumentType.create([{
             'name': 'TestDoc',
             'model': user_model.id,

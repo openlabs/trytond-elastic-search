@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<form string="Elastic Search Configuration">
+    <label name="servers"/>
+    <field name="servers" colspan="3"/>
+    <label name="index_name"/>
+    <field name="index_name"/>
+    <button name="refresh_index" string="Refresh Index"
+        icon="tryton-refresh" colspan="2"/>
+    <notebook>
+        <page string="Settings" id="settings">
+            <field name="settings" colspan="4"/>
+        </page>
+    </notebook>
+    <label name="settings_updated"/>
+    <field name="settings_updated"/>
+    <button name="update_settings" string="Update Settings"
+        icon="tryton-go-next"/>
+</form>

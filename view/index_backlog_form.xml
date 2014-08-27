@@ -1,0 +1,6 @@
+<form string="Index Backlog">
+    <label name="record_model"/>
+    <field name="record_model"/>
+    <label name="record_id"/>
+    <field name="record_id"/>
+</form>
