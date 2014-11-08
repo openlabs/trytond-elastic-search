@@ -27,7 +27,7 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
     settings_updated = fields.Boolean('Setting updated', readonly=True)
 
     @classmethod
-    def get_es_connection(cls):
+    def get_es_connection(cls, **kwargs):
         """
         Return a PYES connection object that can be reused by other models
         """
@@ -42,7 +42,8 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
 
         return ES(
             configuration.servers.split(','),
-            default_indices=[configuration.index_name]
+            default_indices=[configuration.index_name],
+            **kwargs
         )
 
     @classmethod
