@@ -139,6 +139,13 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
                         ],
                         "type": "custom",
                         "tokenizer": "standard"
+                    },
+                    "html_analyzer": {
+                        "type": "custom",
+                        "tokenizer": "standard",
+                        "char_filter": [
+                            "html_strip"
+                        ]
                     }
                 }
             }
