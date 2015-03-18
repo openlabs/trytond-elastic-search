@@ -7,25 +7,18 @@
     :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-import sys
 import time
-import os
-DIR = os.path.abspath(os.path.normpath(os.path.join(
-    __file__,
-    '..', '..', '..', '..', '..', 'trytond'))
-)
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
-
 import unittest
 from pyes import TermQuery
+
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT, test_view,\
     test_depends
 from trytond.transaction import Transaction
-from trytond.config import CONFIG
+from trytond.config import config
 
-CONFIG['elastic_search_server'] = "http://localhost:9200"
+config.add_section('elastic_search')
+config.set('elastic_search', 'server_uri', 'http://localhost:9200')
 
 
 class IndexBacklogTestCase(unittest.TestCase):
