@@ -9,8 +9,8 @@ import json
 import logging
 
 from trytond.model import ModelView, ModelSQL, ModelSingleton, fields
-from trytond.config import CONFIG
 from trytond.transaction import Transaction
+from trytond.config import config
 from pyes import ES
 from pyes.managers import Indices
 
@@ -65,7 +65,7 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
         """
         Find the server from config and return
         """
-        return CONFIG.get('elastic_search_server', 'localhost:9200')
+        return config.get('elastic_search', 'server_uri')
 
     def get_server(self, name):
         """
