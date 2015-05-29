@@ -35,6 +35,9 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
         # created ?
         # Or create one on the fly when connection is requested ?
         configuration = cls(1)
+        if not configuration.servers:
+            return
+
         logger = cls.get_logger()
 
         if not configuration.settings_updated:
@@ -191,6 +194,9 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
         config, = records
 
         conn = config.get_es_connection()
+        if conn is None:
+            return
+
         indices = Indices(conn)
         logger = cls.get_logger()
 
@@ -229,6 +235,9 @@ class Configuration(ModelSingleton, ModelSQL, ModelView):
         configuration, = records
 
         conn = cls.get_es_connection()
+        if conn is None:
+            return
+
         conn.indices.refresh(configuration.index_name)
 
     @classmethod

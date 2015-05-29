@@ -8,7 +8,6 @@
     :license: BSD, see LICENSE for more details.
 """
 import json
-import warnings
 
 from pyes.exceptions import NotFoundException
 from trytond.model import ModelSQL, ModelView, fields
@@ -53,20 +52,6 @@ class IndexBacklog(ModelSQL, ModelView):
                     'record_id': record.id,
                 })
         return cls.create(vlist)
-
-    @staticmethod
-    def _get_es_connection():
-        """
-        Return a PYES connection
-        """
-        warnings.warn(
-            "_get_es_connection will be deprecated in version 3.4\n"
-            "Pool().get('elasticsearch.configuration').get_es_connection() "
-            "replaces this method.",
-            DeprecationWarning
-        )
-        Configuration = Pool().get('elasticsearch.configuration')
-        return Configuration.get_es_connection()
 
     @staticmethod
     def _build_default_doc(record):

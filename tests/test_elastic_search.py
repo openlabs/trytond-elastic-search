@@ -184,7 +184,7 @@ class DocumentTypeTestCase(unittest.TestCase):
             self.assertEqual(len(self.IndexBacklog.search([])), 0)
 
             time.sleep(2)  # wait for changes to reach search server
-            conn = self.IndexBacklog._get_es_connection()
+            conn = self.Configuration.get_es_connection()
             result = conn.search(query=TermQuery('rec_name', 'testuser'))
             self.assertEqual(len(result), 1)
 
